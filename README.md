@@ -8,8 +8,8 @@ bun add @elysiajs/apollo
 
 ## Example
 ```typescript
-import { elysia } from 'elysia'
-import { apollo } from '@elysiajs/apollo'
+import { Elysia } from 'elysia'
+import { apollo, gql } from '@elysiajs/apollo'
 
 const app = new Elysia()
     .use(
