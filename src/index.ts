@@ -106,10 +106,6 @@ export class ElysiaApolloServer<
                     }
                 )
 
-            const headers = {
-                'Content-Type': 'application/json'
-            }
-
             const landing = enablePlayground
                 ? ApolloServerPluginLandingPageGraphQLPlayground()
                 : process.env.ENV === 'production'
@@ -143,91 +139,89 @@ export class ElysiaApolloServer<
                 }
             )
 
-            return app.group(path, (app) =>
-                app
-                    .get(
-                        '',
-                        () =>
-                            new Response(landingPage.html, {
-                                headers: {
-                                    'Content-Type': 'text/html'
-                                }
-                            })
-                    )
-                    .post(
-                        '',
-                        (context) =>
-                            runHttpQuery(
-                                [],
-                                {
-                                    options,
-                                    method: context.request.method,
-                                    query: context.body,
-                                    // @ts-ignore
-                                    request: context.request
-                                },
-                                this.csrfPreventionRequestHeaders
-                            )
-                                .then((res) => {
-                                    if (
-                                        Object.keys(
-                                            res.responseInit.headers ?? {}
-                                        ).length > 2
-                                    )
-                                        Object.assign(
-                                            context.set.headers,
-                                            res.responseInit.headers!
-                                        )
-
-                                    if (res.responseInit.status)
-                                        context.set.status =
-                                            res.responseInit.status
-
-                                    return JSON.parse(res.graphqlResponse)
-                                })
-                                .catch((error) => {
-                                    if (!isHttpQueryError(error)) throw error
-
-                                    if (error.headers)
-                                        Object.assign(
-                                            context.set.headers,
-                                            error.headers
-                                        )
-
-                                    return new Response(error.message, {
-                                        status: error.statusCode,
-                                        headers
-                                    })
-                                }),
-                        {
-                            schema: {
-                                response: t.Object(
-                                    {
-                                        data: t.Object(
-                                            {},
-                                            {
-                                                additionalProperties: true
-                                            }
-                                        )
-                                    },
-                                    {
-                                        additionalProperties: true
-                                    }
-                                ),
-                                body: t.Object(
-                                    {
-                                        query: t.String(),
-                                        operationName: t.Optional(t.String()),
-                                        variables: t.Optional(t.Object({}))
-                                    },
-                                    {
-                                        additionalProperties: true
-                                    }
-                                )
+            return app
+                .get(
+                    path,
+                    () =>
+                        new Response(landingPage.html, {
+                            headers: {
+                                'Content-Type': 'text/html'
                             }
+                        })
+                )
+                .post(
+                    path,
+                    (context) =>
+                        runHttpQuery(
+                            [],
+                            {
+                                options,
+                                method: context.request.method,
+                                query: context.body,
+                                // @ts-ignore
+                                request: context.request
+                            },
+                            this.csrfPreventionRequestHeaders
+                        )
+                            .then((res) => {
+                                if (
+                                    Object.keys(res.responseInit.headers ?? {})
+                                        .length > 2
+                                )
+                                    Object.assign(
+                                        context.set.headers,
+                                        res.responseInit.headers!
+                                    )
+
+                                if (res.responseInit.status)
+                                    context.set.status = res.responseInit.status
+
+                                return JSON.parse(res.graphqlResponse)
+                            })
+                            .catch((error) => {
+                                if (!isHttpQueryError(error)) throw error
+
+                                if (error.headers)
+                                    Object.assign(
+                                        context.set.headers,
+                                        error.headers
+                                    )
+
+                                return new Response(error.message, {
+                                    status: error.statusCode,
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    }
+                                })
+                            }),
+                    {
+                        schema: {
+                            response: t.Object(
+                                {
+                                    data: t.Object(
+                                        {},
+                                        {
+                                            additionalProperties: true
+                                        }
+                                    )
+                                },
+                                {
+                                    additionalProperties: true
+                                }
+                            ),
+                            body: t.Object(
+                                {
+                                    query: t.String(),
+                                    operationName: t.Optional(t.String()),
+                                    variables: t.Optional(t.Object({}))
+                                },
+                                {
+                                    additionalProperties: true
+                                }
+                            )
                         }
-                    )
-            )
+                    }
+                )
         }
     }
 }
@@ -249,6 +243,7 @@ export const apollo = <Path extends string = '/graphql'>({
         enablePlayground
     })
 
-export default apollo
 export { jit }
 export { gql } from 'apollo-server'
+
+export default apollo

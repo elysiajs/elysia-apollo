@@ -1,4 +1,4 @@
-import { Elysia, SCHEMA } from 'elysia'
+import { Elysia } from 'elysia'
 import { apollo } from '../src/index'
 
 import typeDefs from './schema'
