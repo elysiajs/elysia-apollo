@@ -1,0 +1,58 @@
+{
+    "name": "@elysiajs/apollo",
+    "description": "Plugin for Elysia for using GraphQL Apollo",
+    "version": "0.1.0-beta.0",
+    "author": {
+        "name": "saltyAom",
+        "url": "https://github.com/SaltyAom",
+        "email": "saltyaom@gmail.com"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/elysiajs/elysia-apollo"
+    },
+    "main": "./dist/index.js",
+    "exports": {
+        "require": "./dist/index.js",
+        "import": "./dist/index.js",
+        "node": "./dist/index.js",
+        "default": "./dist/index.js"
+    },
+    "types": "./src/index.ts",
+    "bugs": "https://github.com/elysiajs/elysia-apollo/issues",
+    "homepage": "https://github.com/elysiajs/elysia-apollo",
+    "keywords": [
+        "elysia",
+        "apollo",
+        "graphql"
+    ],
+    "license": "MIT",
+    "scripts": {
+        "dev": "bun run --hot example/index.ts",
+        "test": "bun wiptest",
+        "build": "rimraf dist && tsc --project tsconfig.esm.json",
+        "release": "npm run build && npm run test && npm publish --access public"
+    },
+    "dependencies": {
+        "apollo-server": "^3.10.3",
+        "apollo-server-core": "^3.10.3",
+        "apollo-server-env": "^4.2.1",
+        "elysia": "^0.1.2",
+        "graphql-jit": "^0.7.4",
+        "tiny-lru": "^10.0.1"
+    },
+    "devDependencies": {
+        "@elysiajs/cors": "^0.1.0",
+        "@swc/cli": "^0.1.59",
+        "@swc/core": "^1.3.26",
+        "@types/node": "^18.11.18",
+        "bun-types": "^0.4.0",
+        "eslint": "^8.32.0",
+        "graphql": "^16.6.0",
+        "typescript": "^4.9.4"
+    },
+    "peerDependencies": {
+        "elysia": ">= 0.0.0-experimental.28",
+        "graphql": ">= 16.6.0"
+    }
+}
