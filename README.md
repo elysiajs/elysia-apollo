@@ -44,7 +44,7 @@ const app = new Elysia()
 ## Config
 This plugin extends Apollo's [ServerRegistration](https://www.apollographql.com/docs/apollo-server/api/apollo-server/#options) (which is `ApolloServer`'s' constructor parameter).
 
-Below is the extended parameters for configuring Apollo Server with Elysia.
+Below are the extended parameters for configuring Apollo Server with Elysia.
 ### path
 @default "/graphql"
 
