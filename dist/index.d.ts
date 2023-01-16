@@ -1,28 +1,17 @@
 /// <reference types="bun-types" />
-import type { Context, Elysia, Handler } from 'elysia';
-import { ApolloServerBase, type Config, type GraphQLOptions } from 'apollo-server-core';
-import { jit } from './jit';
-export interface ServerRegistration<Path extends string = '/graphql'> {
+import type { Elysia } from 'elysia';
+import { ApolloServer, type ApolloServerOptions, BaseContext } from '@apollo/server';
+import { type StartStandaloneServerOptions } from '@apollo/server/standalone';
+export interface ServerRegistration<Path extends string = '/graphql'> extends StartStandaloneServerOptions<any> {
     path?: Path;
     enablePlayground: boolean;
-    onHealthCheck?: Handler;
-    disableHealthCheck?: boolean;
 }
-export interface ElysiaApolloConfig<Path extends string = '/graphql'> extends Config, Omit<ServerRegistration<Path>, 'enablePlayground'>, Partial<Pick<ServerRegistration, 'enablePlayground'>> {
-}
-export declare class ElysiaApolloServer<ContextFunctionParams = Context> extends ApolloServerBase<ContextFunctionParams> {
-    private schema;
-    private schemaHash;
-    private documentStore;
-    getOption(integrationContextArgument?: any): Promise<GraphQLOptions>;
-    protected serverlessFramework(): boolean;
-    createHandler<Path extends string = '/graphql'>({ path, disableHealthCheck, onHealthCheck, enablePlayground }: ServerRegistration<Path>): (app: Elysia) => import("elysia/dist/types").ElysiaRoute<"POST", {
-        response: import("@sinclair/typebox").TObject<{
-            data: import("@sinclair/typebox").TObject<{}>;
-        }>;
+export type ElysiaApolloConfig<Path extends string = '/graphql', TContext extends BaseContext = BaseContext> = ApolloServerOptions<TContext> & Omit<ServerRegistration<Path>, 'enablePlayground'> & Partial<Pick<ServerRegistration, 'enablePlayground'>>;
+export declare class ElysiaApolloServer<Context extends BaseContext = BaseContext> extends ApolloServer<Context> {
+    createHandler<Path extends string = '/graphql'>({ path, enablePlayground, context }: ServerRegistration<Path>): (app: Elysia) => import("elysia/dist/types").ElysiaRoute<"POST", {
         body: import("@sinclair/typebox").TObject<{
+            operationName: import("@sinclair/typebox").TOptional<import("@sinclair/typebox").TUnion<[import("@sinclair/typebox").TString<string>, import("@sinclair/typebox").TNull]>>;
             query: import("@sinclair/typebox").TString<string>;
-            operationName: import("@sinclair/typebox").TOptional<import("@sinclair/typebox").TString<string>>;
             variables: import("@sinclair/typebox").TOptional<import("@sinclair/typebox").TObject<{}>>;
         }>;
     }, {
@@ -33,15 +22,12 @@ export declare class ElysiaApolloServer<ContextFunctionParams = Context> extends
             response: Response;
         }>>>;
         schema: {};
-    }, Path, any>;
+    }, Path, Response>;
 }
-export declare const apollo: <Path extends string = "/graphql">({ path, onHealthCheck, disableHealthCheck, enablePlayground, ...config }: ElysiaApolloConfig<Path>) => (app: Elysia) => import("elysia/dist/types").ElysiaRoute<"POST", {
-    response: import("@sinclair/typebox").TObject<{
-        data: import("@sinclair/typebox").TObject<{}>;
-    }>;
+export declare const apollo: <Path extends string = "/graphql">({ path, enablePlayground, context, ...config }: ElysiaApolloConfig<Path, BaseContext>) => (app: Elysia) => import("elysia/dist/types").ElysiaRoute<"POST", {
     body: import("@sinclair/typebox").TObject<{
+        operationName: import("@sinclair/typebox").TOptional<import("@sinclair/typebox").TUnion<[import("@sinclair/typebox").TString<string>, import("@sinclair/typebox").TNull]>>;
         query: import("@sinclair/typebox").TString<string>;
-        operationName: import("@sinclair/typebox").TOptional<import("@sinclair/typebox").TString<string>>;
         variables: import("@sinclair/typebox").TOptional<import("@sinclair/typebox").TObject<{}>>;
     }>;
 }, {
@@ -52,7 +38,6 @@ export declare const apollo: <Path extends string = "/graphql">({ path, onHealth
         response: Response;
     }>>>;
     schema: {};
-}, Path, any>;
-export { jit };
-export { gql } from 'apollo-server';
+}, Path, Response>;
+export { gql } from 'graphql-tag';
 export default apollo;

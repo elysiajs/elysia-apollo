@@ -1,68 +1,16 @@
 import { t } from 'elysia';
-import { ApolloServerBase, isHttpQueryError, runHttpQuery, ApolloServerPluginLandingPageLocalDefault, ApolloServerPluginLandingPageProductionDefault, ApolloServerPluginLandingPageGraphQLPlayground } from 'apollo-server-core';
-import { jit } from './jit';
-export class ElysiaApolloServer extends ApolloServerBase {
-    // This function is used by the integrations to generate the graphQLOptions
-    // from an object containing the request and other integration specific
-    // options
-    async getOption(
-    // We ought to be able to declare this as taking ContextFunctionParams, but
-    // that gets us into weird business around inheritance, since a subclass (eg
-    // Lambda subclassing Express) may have a different ContextFunctionParams.
-    // So it's the job of the subclass's function that calls this function to
-    // make sure that its argument properly matches the particular subclass's
-    // context params type.
-    integrationContextArgument) {
-        // @ts-ignore
-        let context = this.context ? this.context : {};
-        try {
-            context =
-                typeof context === 'function'
-                    ? await context(integrationContextArgument || {})
-                    : context;
-        }
-        catch (error) {
-            // Defer context error resolution to inside of runQuery
-            context = () => {
-                throw error;
-            };
-        }
-        return {
-            schema: this.schema,
-            schemaHash: this.schemaHash,
-            // @ts-ignore
-            logger: this.logger,
-            plugins: this.plugins,
-            documentStore: this.documentStore,
-            // @ts-ignore
-            context,
-            // @ts-ignore
-            parseOptions: this.parseOptions,
-            ...this.requestOptions
-        };
-    }
-    serverlessFramework() {
-        return true;
-    }
+import { ApolloServer } from '@apollo/server';
+import { ApolloServerPluginLandingPageLocalDefault, ApolloServerPluginLandingPageProductionDefault } from '@apollo/server/plugin/landingPage/default';
+import { ApolloServerPluginLandingPageGraphQLPlayground } from '@apollo/server-plugin-landing-page-graphql-playground';
+export class ElysiaApolloServer extends ApolloServer {
     createHandler({ 
     // @ts-ignore
-    path = '/graphql', disableHealthCheck, onHealthCheck, enablePlayground }) {
+    path = '/graphql', enablePlayground, context }) {
         return (app) => {
-            if (!disableHealthCheck)
-                app.get('/.well-known/apollo/server-health', async (context) => {
-                    if (onHealthCheck)
-                        try {
-                            await onHealthCheck(context);
-                            return { status: 'pass' };
-                        }
-                        catch (e) {
-                            context.set.status = 503;
-                            return { status: 'failed' };
-                        }
-                    return { status: 'pass' };
-                });
             const landing = enablePlayground
-                ? ApolloServerPluginLandingPageGraphQLPlayground()
+                ? ApolloServerPluginLandingPageGraphQLPlayground({
+                    endpoint: path
+                })
                 : process.env.ENV === 'production'
                     ? ApolloServerPluginLandingPageProductionDefault({
                         footer: false
@@ -78,15 +26,16 @@ export class ElysiaApolloServer extends ApolloServerBase {
             landing.serverWillStart()
             // @ts-ignore
             ).renderLandingPage());
-            let options;
+            this.startInBackgroundHandlingStartupErrorsByLoggingAndFailingAllRequests();
+            let contextValue;
             // @ts-ignore
             this._ensureStarted().then(
             // @ts-ignore
             async ({ schema, schemaHash, documentStore }) => {
-                this.schema = schema;
-                this.schemaHash = schemaHash;
-                this.documentStore = documentStore;
-                options = await this.getOption();
+                const createContext = context ?? (async (a) => ({}));
+                // @ts-ignore
+                const contextInner = await createContext({});
+                contextValue = () => contextInner;
             });
             return app
                 .get(path, () => new Response(landingPage.html, {
@@ -94,45 +43,49 @@ export class ElysiaApolloServer extends ApolloServerBase {
                     'Content-Type': 'text/html'
                 }
             }))
-                .post(path, (context) => runHttpQuery([], {
-                options,
-                method: context.request.method,
-                query: context.body,
-                // @ts-ignore
-                request: context.request
-            }, this.csrfPreventionRequestHeaders)
-                .then((res) => {
-                if (Object.keys(res.responseInit.headers ?? {})
-                    .length > 2)
-                    Object.assign(context.set.headers, res.responseInit.headers);
-                if (res.responseInit.status)
-                    context.set.status = res.responseInit.status;
-                return JSON.parse(res.graphqlResponse);
-            })
-                .catch((error) => {
-                if (!isHttpQueryError(error))
-                    throw error;
-                if (error.headers)
-                    Object.assign(context.set.headers, error.headers);
-                return new Response(error.message, {
-                    status: error.statusCode,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                .post(path, (context) => {
+                return this.executeHTTPGraphQLRequest({
+                    httpGraphQLRequest: {
+                        method: context.request.method,
+                        body: context.body,
+                        search: '',
+                        // @ts-ignore
+                        request: context.request,
+                        // @ts-ignore
+                        headers: context.request.headers
+                    },
+                    context: contextValue
+                })
+                    .then((res) => {
+                    if (Object.keys(res.headers ?? {}).length > 2)
+                        Object.assign(context.set.headers, res.headers);
+                    if (res.body.kind === 'complete')
+                        return new Response(res.body.string, {
+                            status: res.status ?? 200,
+                            headers: context.set.headers
+                        });
+                    return new Response('');
+                })
+                    .catch((error) => {
+                    if (error instanceof Error)
+                        throw error;
+                    if (error.headers)
+                        Object.assign(context.set.headers, error.headers);
+                    return new Response(error.message, {
+                        status: error.statusCode,
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
                 });
-            }), {
+            }, {
                 schema: {
-                    response: t.Object({
-                        data: t.Object({}, {
-                            additionalProperties: true
-                        })
-                    }, {
-                        additionalProperties: true
-                    }),
                     body: t.Object({
+                        operationName: t.Optional(t.Union([t.String(), t.Null()])),
                         query: t.String(),
-                        operationName: t.Optional(t.String()),
-                        variables: t.Optional(t.Object({}))
+                        variables: t.Optional(t.Object({}, {
+                            additionalProperties: true
+                        }))
                     }, {
                         additionalProperties: true
                     })
@@ -141,15 +94,19 @@ export class ElysiaApolloServer extends ApolloServerBase {
         };
     }
 }
-export const apollo = ({ path, onHealthCheck, disableHealthCheck, enablePlayground = process.env.ENV !== 'production', ...config }) => new ElysiaApolloServer({
-    executor: jit(),
-    ...config
-}).createHandler({
+export const apollo = ({ path, enablePlayground = process.env.ENV !== 'production', context, ...config }) => new ElysiaApolloServer(config).createHandler({
+    context,
     path,
-    onHealthCheck,
-    disableHealthCheck,
     enablePlayground
 });
-export { jit };
-export { gql } from 'apollo-server';
+export { gql } from 'graphql-tag';
 export default apollo;
+// gateway: {
+//     async load() {
+//         return jit()
+//     },
+//     onSchemaLoadOrUpdate() {
+//         return () => {}
+//     },
+//     async stop() {}
+// },
