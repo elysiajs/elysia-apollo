@@ -3,7 +3,7 @@ Plugin for [elysia](https://github.com/elysiajs/elysia) for using GraphQL Apollo
 
 ## Installation
 ```bash
-bun add @elysiajs/apollo
+bun add @elysiajs/apollo @apollo/server graphql
 ```
 
 ## Example

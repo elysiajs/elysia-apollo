@@ -3,9 +3,9 @@ import type { Context, Elysia, Handler, TypedRoute } from 'elysia'
 
 import {
     ApolloServer,
-    type ApolloServerOptions,
     BaseContext,
-    ContextThunk
+    ContextThunk,
+    type ApolloServerOptions
 } from '@apollo/server'
 import {
     ApolloServerPluginLandingPageLocalDefault,
@@ -27,140 +27,135 @@ export type ElysiaApolloConfig<
     Omit<ServerRegistration<Path>, 'enablePlayground'> &
     Partial<Pick<ServerRegistration, 'enablePlayground'>>
 
+const getQuery = (url: string) => url.slice(url.indexOf('?', 9) + 1)
+
 export class ElysiaApolloServer<
     Context extends BaseContext = BaseContext
 > extends ApolloServer<Context> {
-    public createHandler<Path extends string = '/graphql'>({
-        // @ts-ignore
-        path = '/graphql',
+    public async createHandler<Path extends string = '/graphql'>({
+        path = '/graphql' as Path,
         enablePlayground,
         context
     }: ServerRegistration<Path>) {
-        return (app: Elysia) => {
-            const landing = enablePlayground
-                ? ApolloServerPluginLandingPageGraphQLPlayground({
-                      endpoint: path
-                  })
-                : process.env.ENV === 'production'
-                ? ApolloServerPluginLandingPageProductionDefault({
-                      footer: false
-                  })
-                : ApolloServerPluginLandingPageLocalDefault({
-                      footer: false
-                  })
+        const landing = enablePlayground
+            ? ApolloServerPluginLandingPageGraphQLPlayground({
+                  endpoint: path
+              })
+            : process.env.ENV === 'production'
+            ? ApolloServerPluginLandingPageProductionDefault({
+                  footer: false
+              })
+            : ApolloServerPluginLandingPageLocalDefault({
+                  footer: false
+              })
 
-            // ! This is a hack
-            const landingPage = Bun.peek(
-                // @ts-ignore
-                Bun.peek(
-                    // @ts-ignore
-                    landing!.serverWillStart!()
-                    // @ts-ignore
-                ).renderLandingPage()
-            )
+        await this.start()
 
-            this.startInBackgroundHandlingStartupErrorsByLoggingAndFailingAllRequests()
-
-            let contextValue: ContextThunk<Context>
-
+        // @ts-ignore
+        const contextValue = await this._ensureStarted().then(
             // @ts-ignore
-            this._ensureStarted().then(
+            async ({ schema, schemaHash, documentStore }) => {
+                const createContext = context ?? (async (a: any) => ({}))
                 // @ts-ignore
-                async ({ schema, schemaHash, documentStore }) => {
-                    const createContext = context ?? (async (a: any) => ({}))
-                    // @ts-ignore
-                    const contextInner = await createContext({})
+                return await createContext({})
+            }
+        )
 
-                    contextValue = () => contextInner
-                }
-            )
+        const landingPage = await landing!.serverWillStart!(contextValue).then(
+            async (r) =>
+                r?.renderLandingPage
+                    ? await r.renderLandingPage().then((r) => r.html)
+                    : null
+        )
 
-            return app
-                .get(
+        const getContext = () => contextValue
+
+        return (app: Elysia) => {
+            if (landingPage)
+                app.get(
                     path,
                     () =>
-                        new Response(landingPage.html, {
+                        new Response(landingPage, {
                             headers: {
                                 'Content-Type': 'text/html'
                             }
                         })
                 )
-                .post(
-                    path,
-                    (context) => {
-                        return this.executeHTTPGraphQLRequest({
-                            httpGraphQLRequest: {
-                                method: context.request.method,
-                                body: context.body,
-                                search: '',
-                                // @ts-ignore
-                                request: context.request,
-                                // @ts-ignore
-                                headers: context.request.headers
-                            },
-                            context: contextValue
-                        })
-                            .then((res) => {
-                                if (Object.keys(res.headers ?? {}).length > 2)
-                                    Object.assign(
-                                        context.set.headers,
-                                        res.headers
-                                    )
 
-                                if (res.body.kind === 'complete')
-                                    return new Response(res.body.string, {
-                                        status: res.status ?? 200,
-                                        headers: context.set.headers
-                                    })
+            return app.post(
+                path,
+                (context) => {
+                    return this.executeHTTPGraphQLRequest({
+                        httpGraphQLRequest: {
+                            method: context.request.method,
+                            body: context.body,
+                            search: getQuery(context.request.url),
+                            request: context.request,
+                            // @ts-ignore
+                            headers: context.request.headers
+                        },
+                        context: getContext
+                    })
+                        .then((res) => {
+                            if (Object.keys(res.headers ?? {}).length > 2)
+                                Object.assign(context.set.headers, res.headers)
 
-                                return new Response('')
-                            })
-                            .catch((error) => {
-                                if (error instanceof Error) throw error
-
-                                if (error.headers)
-                                    Object.assign(
-                                        context.set.headers,
-                                        error.headers
-                                    )
-
-                                return new Response(error.message, {
-                                    status: error.statusCode,
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    }
+                            if (res.body.kind === 'complete')
+                                return new Response(res.body.string, {
+                                    status: res.status ?? 200,
+                                    headers: context.set.headers
                                 })
-                            })
-                    },
-                    {
-                        schema: {
-                            body: t.Object(
-                                {
-                                    operationName: t.Optional(
-                                        t.Union([t.String(), t.Null()])
-                                    ),
-                                    query: t.String(),
-                                    variables: t.Optional(
-                                        t.Object(
-                                            {},
-                                            {
-                                                additionalProperties: true
-                                            }
-                                        )
-                                    )
-                                },
-                                {
-                                    additionalProperties: true
+
+                            return new Response('')
+                        })
+                        .catch((error) => {
+                            if (error instanceof Error) throw error
+
+                            if (error.headers)
+                                Object.assign(
+                                    context.set.headers,
+                                    error.headers
+                                )
+
+                            return new Response(error.message, {
+                                status: error.statusCode,
+                                headers: {
+                                    'Content-Type': 'application/json'
                                 }
-                            )
-                        }
+                            })
+                        })
+                },
+                {
+                    schema: {
+                        body: t.Object(
+                            {
+                                operationName: t.Optional(
+                                    t.Union([t.String(), t.Null()])
+                                ),
+                                query: t.String(),
+                                variables: t.Optional(
+                                    t.Object(
+                                        {},
+                                        {
+                                            additionalProperties: true
+                                        }
+                                    )
+                                )
+                            },
+                            {
+                                additionalProperties: true
+                            }
+                        )
                     }
-                )
+                }
+            )
+
+            return app
         }
     }
 }
 
-export const apollo = <Path extends string = '/graphql'>({
+export const apollo = async <Path extends string = '/graphql'>({
     path,
     enablePlayground = process.env.ENV !== 'production',
     context,
@@ -175,13 +170,3 @@ export const apollo = <Path extends string = '/graphql'>({
 export { gql } from 'graphql-tag'
 
 export default apollo
-
-// gateway: {
-//     async load() {
-//         return jit()
-//     },
-//     onSchemaLoadOrUpdate() {
-//         return () => {}
-//     },
-//     async stop() {}
-// },

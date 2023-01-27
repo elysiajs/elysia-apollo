@@ -8,8 +8,8 @@ import { describe, expect, it } from 'bun:test'
 const path = '/graphql'
 
 const req = () => new Request(path)
-const gql = (query: string) =>
-    new Request(path, {
+const gql = (query: string, pathname = path) =>
+    new Request(pathname, {
         method: 'POST',
         headers: {
             'content-type': 'application/json'
@@ -19,10 +19,8 @@ const gql = (query: string) =>
         })
     })
 
-const delay = () => new Promise((resolve) => setTimeout(resolve, 100))
-
 describe('Apollo', () => {
-    it('should get root path', async () => {
+    it('query', async () => {
         const app = new Elysia().use(
             apollo({
                 path,
@@ -31,7 +29,7 @@ describe('Apollo', () => {
             })
         )
 
-        await delay()
+        await app.modules
 
         const res = await app
             .handle(
@@ -41,6 +39,43 @@ describe('Apollo', () => {
                 author
             }
         }`)
+            )
+            .then((r) => r.json())
+
+        expect(res).toEqual({
+            data: {
+                books: resolvers.Query.books(
+                    undefined,
+                    undefined,
+                    {},
+                    undefined
+                )
+            }
+        })
+    })
+
+    it('custom path', async () => {
+        const app = new Elysia().use(
+            apollo({
+                path: '/v2/graphql',
+                typeDefs,
+                resolvers
+            })
+        )
+
+        await app.modules
+
+        const res = await app
+            .handle(
+                await gql(
+                    `query {
+            books {
+                title
+                author
+            }
+        }`,
+                    '/v2/graphql'
+                )
             )
             .then((r) => r.json())
 
