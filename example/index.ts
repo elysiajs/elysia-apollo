@@ -1,5 +1,5 @@
 import { Elysia } from 'elysia'
-import { apollo, jit } from '../src/index'
+import { apollo } from '../src/index'
 
 import typeDefs from './schema'
 import resolvers from './resolvers'
@@ -9,9 +9,9 @@ const app = new Elysia()
         apollo({
             typeDefs,
             resolvers,
-            context: async () => ({
-                hi: 'there'
-            })
+            context: async (context) => {
+                return { hi: 'there' }
+            }
         })
     )
     .listen(3000)

@@ -15,9 +15,10 @@ import { ApolloServerPluginLandingPageGraphQLPlayground } from '@apollo/server-p
 import { type StartStandaloneServerOptions } from '@apollo/server/standalone'
 
 export interface ServerRegistration<Path extends string = '/graphql'>
-    extends StartStandaloneServerOptions<any> {
+    extends Omit<StartStandaloneServerOptions<any>, 'context'> {
     path?: Path
     enablePlayground: boolean
+    context?: (context: Context) => Promise<any>
 }
 
 export type ElysiaApolloConfig<
@@ -27,7 +28,7 @@ export type ElysiaApolloConfig<
     Omit<ServerRegistration<Path>, 'enablePlayground'> &
     Partial<Pick<ServerRegistration, 'enablePlayground'>>
 
-const getQuery = (url: string) => url.slice(url.indexOf('?', 9) + 1)
+const getQueryString = (url: string) => url.slice(url.indexOf('?', 9) + 1)
 
 export class ElysiaApolloServer<
     Context extends BaseContext = BaseContext
@@ -35,7 +36,7 @@ export class ElysiaApolloServer<
     public async createHandler<Path extends string = '/graphql'>({
         path = '/graphql' as Path,
         enablePlayground,
-        context
+        context = async () => {}
     }: ServerRegistration<Path>) {
         const landing = enablePlayground
             ? ApolloServerPluginLandingPageGraphQLPlayground({
@@ -52,23 +53,14 @@ export class ElysiaApolloServer<
         await this.start()
 
         // @ts-ignore
-        const contextValue = await this._ensureStarted().then(
-            // @ts-ignore
-            async ({ schema, schemaHash, documentStore }) => {
-                const createContext = context ?? (async (a: any) => ({}))
-                // @ts-ignore
-                return await createContext({})
-            }
-        )
-
-        const landingPage = await landing!.serverWillStart!(contextValue).then(
+        const landingPage = await landing!.serverWillStart!({}).then(
             async (r) =>
                 r?.renderLandingPage
                     ? await r.renderLandingPage().then((r) => r.html)
                     : null
         )
 
-        const getContext = () => contextValue
+        // const getContext = () => contextValue
 
         return (app: Elysia) => {
             if (landingPage)
@@ -84,26 +76,26 @@ export class ElysiaApolloServer<
 
             return app.post(
                 path,
-                (context) => {
+                (c) => {
                     return this.executeHTTPGraphQLRequest({
                         httpGraphQLRequest: {
-                            method: context.request.method,
-                            body: context.body,
-                            search: getQuery(context.request.url),
-                            request: context.request,
+                            method: c.request.method,
+                            body: c.body,
+                            search: getQueryString(c.request.url),
+                            request: c.request,
                             // @ts-ignore
-                            headers: context.request.headers
+                            headers: c.request.headers
                         },
-                        context: getContext
+                        context: async () => context(c)
                     })
                         .then((res) => {
                             if (Object.keys(res.headers ?? {}).length > 2)
-                                Object.assign(context.set.headers, res.headers)
+                                Object.assign(c.set.headers, res.headers)
 
                             if (res.body.kind === 'complete')
                                 return new Response(res.body.string, {
                                     status: res.status ?? 200,
-                                    headers: context.set.headers
+                                    headers: c.set.headers
                                 })
 
                             return new Response('')
@@ -112,10 +104,7 @@ export class ElysiaApolloServer<
                             if (error instanceof Error) throw error
 
                             if (error.headers)
-                                Object.assign(
-                                    context.set.headers,
-                                    error.headers
-                                )
+                                Object.assign(c.set.headers, error.headers)
 
                             return new Response(error.message, {
                                 status: error.statusCode,
