@@ -9,6 +9,7 @@ const app = new Elysia()
         apollo({
             typeDefs,
             resolvers,
+            // enablePlayground: true,
             context: async (context) => {
                 return { hi: 'there' }
             }

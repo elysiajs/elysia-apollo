@@ -9,7 +9,7 @@ const path = '/graphql'
 
 const req = () => new Request(path)
 const gql = (query: string, pathname = path) =>
-    new Request(pathname, {
+    new Request(`http://localhost${pathname}`, {
         method: 'POST',
         headers: {
             'content-type': 'application/json'
