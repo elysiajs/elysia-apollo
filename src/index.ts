@@ -1,3 +1,4 @@
+import { t } from 'elysia'
 import type { Context, Elysia, Handler, TypedRoute } from 'elysia'
 
 import {
@@ -75,7 +76,7 @@ export class ElysiaApolloServer<
 
             return app.post(
                 path,
-                (c) => {
+                async (c) => {
                     return this.executeHTTPGraphQLRequest({
                         httpGraphQLRequest: {
                             method: c.request.method,
@@ -113,29 +114,29 @@ export class ElysiaApolloServer<
                             })
                         })
                 },
-                // {
-                //     schema: {
-                //         body: t.Object(
-                //             {
-                //                 operationName: t.Optional(
-                //                     t.Union([t.String(), t.Null()])
-                //                 ),
-                //                 query: t.String(),
-                //                 variables: t.Optional(
-                //                     t.Object(
-                //                         {},
-                //                         {
-                //                             additionalProperties: true
-                //                         }
-                //                     )
-                //                 )
-                //             },
-                //             {
-                //                 additionalProperties: true
-                //             }
-                //         )
-                //     }
-                // }
+                {
+                    schema: {
+                        body: t.Object(
+                            {
+                                operationName: t.Optional(
+                                    t.Union([t.String(), t.Null()])
+                                ),
+                                query: t.String(),
+                                variables: t.Optional(
+                                    t.Object(
+                                        {},
+                                        {
+                                            additionalProperties: true
+                                        }
+                                    )
+                                )
+                            },
+                            {
+                                additionalProperties: true
+                            }
+                        )
+                    }
+                }
             )
 
             return app
