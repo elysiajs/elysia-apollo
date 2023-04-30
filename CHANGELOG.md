@@ -1,3 +1,7 @@
+# 0.4.2 - 30 Apr 2023
+Improvement:
+- Remove unioned return response from plugin
+
 # 0.4.1 - 30 Apr 2023
 Improvement:
 - Remove Apollo path reference from Eden to rely on GraphQL Client instead to improve runtime type

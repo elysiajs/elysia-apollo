@@ -138,8 +138,6 @@ export class ElysiaApolloServer<
                     }
                 }
             )
-
-            return app
         }
     }
 }
