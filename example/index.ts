@@ -15,6 +15,7 @@ const app = new Elysia()
             }
         })
     )
+    .get('/', () => 'hi')
     .listen(3000)
 
 console.log(

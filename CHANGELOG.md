@@ -1,3 +1,7 @@
+# 0.4.1 - 30 Apr 2023
+Improvement:
+- Remove Apollo path reference from Eden to rely on GraphQL Client instead to improve runtime type
+
 # 0.4.0 - 31 Mar 2023
 Improvement:
 - Add support for Elysia >= 0.4.0

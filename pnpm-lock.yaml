@@ -7,7 +7,7 @@ specifiers:
   '@swc/core': ^1.3.26
   '@types/node': ^18.11.18
   bun-types: ^0.5.7
-  elysia: ^0.4.1
+  elysia: ^0.4.13
   eslint: ^8.32.0
   graphql: ^16.6.0
   graphql-tag: ^2.12.6
@@ -25,7 +25,7 @@ devDependencies:
   '@swc/core': 1.3.38
   '@types/node': 18.14.6
   bun-types: 0.5.7
-  elysia: 0.4.1
+  elysia: 0.4.13
   eslint: 8.35.0
   rimraf: 4.3.1
   typescript: 4.9.5
@@ -989,8 +989,8 @@ packages:
     resolution: {integrity: sha1-WQxhFWsK4vTwJVcyoViyZrxWsh0=}
     dev: false
 
-  /elysia/0.4.1:
-    resolution: {integrity: sha512-NIaxYkBIbp0xB1ZY60iSubQDsAQnwvzPkkGl2XKX7xxhBQbsjF4J/JvNNt9ii7mI5Zl3cKHRB+Em7hKFf4NASg==}
+  /elysia/0.4.13:
+    resolution: {integrity: sha512-lWcfaRhe+QAamFLe3Rii8R9vbQMChm5Lnwx4Rm26HkyWay02uAgL/Kh6X4dBnG++rM2H10iLA2vbPwftJCH0dg==}
     peerDependencies:
       '@elysiajs/fn': '*'
     peerDependenciesMeta:
@@ -1007,7 +1007,7 @@ packages:
       lodash.clonedeep: 4.5.0
       nanoid: 4.0.1
       openapi-types: 12.1.0
-      raikiri: 0.1.0-beta.2
+      raikiri: 0.1.3
     dev: true
 
   /encodeurl/1.0.2:
@@ -2028,8 +2028,8 @@ packages:
     engines: {node: '>=10'}
     dev: true
 
-  /raikiri/0.1.0-beta.2:
-    resolution: {integrity: sha512-D0qnbk98V75VVrBZ7sjz/VGi91fmtlsJyC1esv2IgGd0iobpwXg8Dy8abQp1SCiKAmiQA7Ub0Uy8n8IypENA1A==}
+  /raikiri/0.1.3:
+    resolution: {integrity: sha512-Zs1B0E5/zxXSGAoDNYS81GFRusGIBpFCVflgxH7hpXpN0jEhhYQkdRYDnq2llBWcwH9sa6si8uLvQTUh5+OmYA==}
     dev: true
 
   /range-parser/1.2.1:
