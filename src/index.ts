@@ -28,7 +28,7 @@ export type ElysiaApolloConfig<
     Omit<ServerRegistration<Path>, 'enablePlayground'> &
     Partial<Pick<ServerRegistration, 'enablePlayground'>>
 
-const getQueryString = (url: string) => url.slice(url.indexOf('?', 9) + 1)
+const getQueryString = (url: string) => url.slice(url.indexOf('?', 11) + 1)
 
 export class ElysiaApolloServer<
     Context extends BaseContext = BaseContext
@@ -53,31 +53,26 @@ export class ElysiaApolloServer<
         await this.start()
 
         // @ts-ignore
-        const landingPage = await landing!.serverWillStart!({}).then(
-            async (r) =>
-                r?.renderLandingPage
-                    ? await r.renderLandingPage().then((r) => r.html)
-                    : null
+        const landingPage = await landing!.serverWillStart!({}).then((r) =>
+            r?.renderLandingPage
+                ? r.renderLandingPage().then((r) => r.html)
+                : null
         )
-
-        // const getContext = () => contextValue
 
         return (app: Elysia) => {
             if (landingPage)
-                app.get(
-                    path,
-                    () =>
-                        new Response(landingPage, {
-                            headers: {
-                                'Content-Type': 'text/html'
-                            }
-                        })
-                )
+                app.get(path, () => {
+                    return new Response(landingPage, {
+                        headers: {
+                            'Content-Type': 'text/html'
+                        }
+                    })
+                })
 
             return app.post(
                 path,
-                async (c) => {
-                    return this.executeHTTPGraphQLRequest({
+                (c) =>
+                    this.executeHTTPGraphQLRequest({
                         httpGraphQLRequest: {
                             method: c.request.method,
                             body: c.body,
@@ -86,16 +81,14 @@ export class ElysiaApolloServer<
                             // @ts-ignore
                             headers: c.request.headers
                         },
-                        context: async () => context(c)
+                        context: () => context(c)
                     })
                         .then((res) => {
-                            if (Object.keys(res.headers ?? {}).length > 2)
-                                Object.assign(c.set.headers, res.headers)
-
                             if (res.body.kind === 'complete')
                                 return new Response(res.body.string, {
                                     status: res.status ?? 200,
-                                    headers: c.set.headers
+                                    // @ts-ignore
+                                    headers: res.headers
                                 })
 
                             return new Response('')
@@ -103,17 +96,10 @@ export class ElysiaApolloServer<
                         .catch((error) => {
                             if (error instanceof Error) throw error
 
-                            if (error.headers)
-                                Object.assign(c.set.headers, error.headers)
-
                             return new Response(error.message, {
-                                status: error.statusCode,
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                }
+                                status: error.statusCode
                             })
-                        })
-                },
+                        }),
                 {
                     schema: {
                         body: t.Object(

@@ -1,3 +1,7 @@
+# 0.4.3 - 1 May 2023
+Fix:
+- Duplicate headers in Apollo response
+
 # 0.4.2 - 30 Apr 2023
 Improvement:
 - Remove unioned return response from plugin
