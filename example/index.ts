@@ -13,9 +13,10 @@ const app = new Elysia()
     )
     .use(
         apollo({
+            path: '/graphql',
             typeDefs,
             resolvers,
-            // enablePlayground: true,
+            enablePlayground: true,
             context: async (context) => {
                 return { hi: 'there' }
             }

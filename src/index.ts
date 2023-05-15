@@ -81,6 +81,7 @@ export class ElysiaApolloServer<
                             // @ts-ignore
                             headers: c.request.headers
                         },
+                        // @ts-ignore
                         context: () => context(c)
                     })
                         .then((res) => {
@@ -101,27 +102,25 @@ export class ElysiaApolloServer<
                             })
                         }),
                 {
-                    schema: {
-                        body: t.Object(
-                            {
-                                operationName: t.Optional(
-                                    t.Union([t.String(), t.Null()])
-                                ),
-                                query: t.String(),
-                                variables: t.Optional(
-                                    t.Object(
-                                        {},
-                                        {
-                                            additionalProperties: true
-                                        }
-                                    )
+                    body: t.Object(
+                        {
+                            operationName: t.Optional(
+                                t.Union([t.String(), t.Null()])
+                            ),
+                            query: t.String(),
+                            variables: t.Optional(
+                                t.Object(
+                                    {},
+                                    {
+                                        additionalProperties: true
+                                    }
                                 )
-                            },
-                            {
-                                additionalProperties: true
-                            }
-                        )
-                    }
+                            )
+                        },
+                        {
+                            additionalProperties: true
+                        }
+                    )
                 }
             )
         }
