@@ -1,3 +1,7 @@
+# 0.5.0 - 15 May 2023
+- Add support for Elysia 0.5
+- Add CommonJS support
+
 # 0.4.3 - 1 May 2023
 Fix:
 - Duplicate headers in Apollo response
