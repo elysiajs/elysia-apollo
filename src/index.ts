@@ -1,5 +1,5 @@
 import { t } from 'elysia'
-import type { Context, Elysia, Handler, TypedRoute } from 'elysia'
+import type { Context, Elysia } from 'elysia'
 
 import {
     ApolloServer,
