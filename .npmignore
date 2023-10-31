@@ -5,6 +5,8 @@
 .es.swcrc
 bun.lockb
 
+.vscode
+
 node_modules
 tsconfig.json
 jest.config.js
