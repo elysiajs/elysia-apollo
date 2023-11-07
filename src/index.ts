@@ -51,7 +51,7 @@ export class ElysiaApolloServer<
         const gqlServerContext = {} as GraphQLServerContext
         const landingPage = await landing?.serverWillStart?.(gqlServerContext).then(r => {
             if (typeof r === 'object' && r?.renderLandingPage) {
-                return r.renderLandingPage().then(r => r.html)
+                return r.renderLandingPage().then(r => r.html as string)
             }
             return null
         })
