@@ -8,7 +8,7 @@ import {
 import { ApolloServerPluginLandingPageGraphQLPlayground } from '@apollo/server-plugin-landing-page-graphql-playground'
 
 import type { StartStandaloneServerOptions } from '@apollo/server/standalone'
-import type { ApolloServerOptions } from '@apollo/server'
+import type { ApolloServerOptions, GraphQLServerContext } from '@apollo/server'
 
 export interface ServerRegistration<Path extends string = '/graphql'>
     extends Omit<StartStandaloneServerOptions<any>, 'context'> {
@@ -48,12 +48,13 @@ export class ElysiaApolloServer<
 
         await this.start()
 
-        // @ts-ignore
-        const landingPage = await landing!.serverWillStart!({}).then((r) =>
-            r?.renderLandingPage
-                ? r.renderLandingPage().then((r) => r.html)
-                : null
-        )
+        const gqlServerContext = {} as GraphQLServerContext
+        const landingPage = await landing?.serverWillStart?.(gqlServerContext).then(r => {
+            if (typeof r === 'object' && r?.renderLandingPage) {
+                return r.renderLandingPage().then(r => r.html)
+            }
+            return null
+        })
 
         return (app: Elysia) => {
             if (landingPage)
