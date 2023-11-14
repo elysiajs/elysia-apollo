@@ -1,18 +1,14 @@
 import { t } from 'elysia'
-import type { Context, Elysia, Handler, TypedRoute } from 'elysia'
-
-import {
-    ApolloServer,
-    BaseContext,
-    ContextThunk,
-    type ApolloServerOptions
-} from '@apollo/server'
+import type { Context, Elysia } from 'elysia'
+import { ApolloServer, BaseContext } from '@apollo/server'
 import {
     ApolloServerPluginLandingPageLocalDefault,
     ApolloServerPluginLandingPageProductionDefault
 } from '@apollo/server/plugin/landingPage/default'
 import { ApolloServerPluginLandingPageGraphQLPlayground } from '@apollo/server-plugin-landing-page-graphql-playground'
-import { type StartStandaloneServerOptions } from '@apollo/server/standalone'
+
+import type { StartStandaloneServerOptions } from '@apollo/server/standalone'
+import type { ApolloServerOptions, GraphQLServerContext } from '@apollo/server'
 
 export interface ServerRegistration<Path extends string = '/graphql'>
     extends Omit<StartStandaloneServerOptions<any>, 'context'> {
@@ -36,28 +32,29 @@ export class ElysiaApolloServer<
     public async createHandler<Path extends string = '/graphql'>({
         path = '/graphql' as Path,
         enablePlayground,
-        context = async () => {}
+        context = async () => { }
     }: ServerRegistration<Path>) {
         const landing = enablePlayground
             ? ApolloServerPluginLandingPageGraphQLPlayground({
-                  endpoint: path
-              })
+                endpoint: path
+            })
             : process.env.ENV === 'production'
-            ? ApolloServerPluginLandingPageProductionDefault({
-                  footer: false
-              })
-            : ApolloServerPluginLandingPageLocalDefault({
-                  footer: false
-              })
+                ? ApolloServerPluginLandingPageProductionDefault({
+                    footer: false
+                })
+                : ApolloServerPluginLandingPageLocalDefault({
+                    footer: false
+                })
 
         await this.start()
 
-        // @ts-ignore
-        const landingPage = await landing!.serverWillStart!({}).then((r) =>
-            r?.renderLandingPage
-                ? r.renderLandingPage().then((r) => r.html)
-                : null
-        )
+        const gqlServerContext = {} as GraphQLServerContext
+        const landingPage = await landing?.serverWillStart?.(gqlServerContext).then(r => {
+            if (typeof r === 'object' && r?.renderLandingPage) {
+                return r.renderLandingPage().then(r => r.html as string)
+            }
+            return null
+        })
 
         return (app: Elysia) => {
             if (landingPage)

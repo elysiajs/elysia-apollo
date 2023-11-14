@@ -4,6 +4,7 @@ import resolvers from '../example/resolvers'
 import typeDefs from '../example/schema'
 
 import { describe, expect, it } from 'bun:test'
+import { GraphQLResolveInfo } from 'graphql'
 
 const path = '/graphql'
 
@@ -41,14 +42,13 @@ describe('Apollo', () => {
         }`)
             )
             .then((r) => r.json())
-
         expect(res).toEqual({
             data: {
-                books: resolvers.Query.books(
-                    undefined,
-                    undefined,
+                books: resolvers?.Query?.books?.(
                     {},
-                    undefined
+                    {},
+                    {},
+                    {} as GraphQLResolveInfo,
                 )
             }
         })
@@ -81,11 +81,11 @@ describe('Apollo', () => {
 
         expect(res).toEqual({
             data: {
-                books: resolvers.Query.books(
-                    undefined,
-                    undefined,
+                books: resolvers?.Query?.books?.(
                     {},
-                    undefined
+                    {},
+                    {},
+                    {} as GraphQLResolveInfo,
                 )
             }
         })

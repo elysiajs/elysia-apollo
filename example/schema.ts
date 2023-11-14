@@ -1,6 +1,7 @@
+import { DocumentNode } from 'graphql'
 import { gql } from '../src/index'
 
-const typeDefs = gql`
+const typeDefs: DocumentNode = gql`
     # Comments in GraphQL strings (such as this one) start with the hash (#) symbol.
 
     # This "Book" type defines the queryable fields for every book in our data source.
