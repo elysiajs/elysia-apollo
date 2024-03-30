@@ -14,18 +14,18 @@ import {
 import { ApolloServerPluginLandingPageGraphQLPlayground } from '@apollo/server-plugin-landing-page-graphql-playground'
 import { type StartStandaloneServerOptions } from '@apollo/server/standalone'
 
-export interface ServerRegistration<Path extends string = '/graphql'>
+export interface ServerRegistration<Path extends string = '/graphql', TContext extends BaseContext = BaseContext>
     extends Omit<StartStandaloneServerOptions<any>, 'context'> {
     path?: Path
     enablePlayground: boolean
-    context?: (context: Context) => Promise<any>
+    context?: (context: TContext) => Promise<TContext>
 }
 
 export type ElysiaApolloConfig<
     Path extends string = '/graphql',
     TContext extends BaseContext = BaseContext
 > = ApolloServerOptions<TContext> &
-    Omit<ServerRegistration<Path>, 'enablePlayground'> &
+    Omit<ServerRegistration<Path, TContext>, 'enablePlayground'> &
     Partial<Pick<ServerRegistration, 'enablePlayground'>>
 
 const getQueryString = (url: string) => url.slice(url.indexOf('?', 11) + 1)
@@ -36,8 +36,8 @@ export class ElysiaApolloServer<
     public async createHandler<Path extends string = '/graphql'>({
         path = '/graphql' as Path,
         enablePlayground,
-        context = async () => {}
-    }: ServerRegistration<Path>) {
+        context = async () => ({} as any)
+    }: ServerRegistration<Path, Context>) {
         const landing = enablePlayground
             ? ApolloServerPluginLandingPageGraphQLPlayground({
                   endpoint: path
@@ -127,13 +127,16 @@ export class ElysiaApolloServer<
     }
 }
 
-export const apollo = async <Path extends string = '/graphql'>({
+export const apollo = async <
+    Path extends string = '/graphql',
+    TContext extends BaseContext = BaseContext,
+>({
     path,
     enablePlayground = process.env.ENV !== 'production',
     context,
     ...config
-}: ElysiaApolloConfig<Path>) =>
-    new ElysiaApolloServer(config).createHandler<Path>({
+}: ElysiaApolloConfig<Path, TContext>) =>
+    new ElysiaApolloServer<TContext>(config).createHandler<Path>({
         context,
         path,
         enablePlayground

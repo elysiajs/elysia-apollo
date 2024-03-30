@@ -5,6 +5,10 @@ import { cors } from '@elysiajs/cors'
 import typeDefs from './schema'
 import resolvers from './resolvers'
 
+interface MyContext {
+    hi: string
+}
+
 const app = new Elysia()
     .use(
         cors({
@@ -12,7 +16,7 @@ const app = new Elysia()
         })
     )
     .use(
-        apollo({
+        apollo<'/graphql', MyContext>({
             path: '/graphql',
             typeDefs,
             resolvers,
