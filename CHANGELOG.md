@@ -1,3 +1,6 @@
+# 1.0.3 - 30 Mar 2024
+Feature:
+- [#8](https://github.com/elysiajs/elysia-apollo/pull/8) add TContext for Apollo type
 
 # 1.0.2 - 18 Mar 2024
 Change:
