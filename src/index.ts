@@ -54,6 +54,7 @@ export class ElysiaApolloServer<
 
         // @ts-ignore
         const landingPage = await landing!.serverWillStart!({}).then((r) =>
+            // @ts-ignore
             r?.renderLandingPage
                 ? r.renderLandingPage().then((r) => r.html)
                 : null
