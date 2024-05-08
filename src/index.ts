@@ -30,6 +30,24 @@ export type ElysiaApolloConfig<
 
 const getQueryString = (url: string) => url.slice(url.indexOf('?', 11) + 1)
 
+const BODY = t.Object(
+    {
+      operationName: t.Optional(t.Union([t.String(), t.Null()])),
+      query: t.String(),
+      variables: t.Optional(
+        t.Object(
+          {},
+          {
+            additionalProperties: true,
+          }
+        )
+      ),
+    },
+    {
+      additionalProperties: true,
+    }
+  )
+
 export class ElysiaApolloServer<
     Context extends BaseContext = BaseContext
 > extends ApolloServer<Context> {
@@ -102,25 +120,7 @@ export class ElysiaApolloServer<
                             })
                         }),
                 {
-                    body: t.Object(
-                        {
-                            operationName: t.Optional(
-                                t.Union([t.String(), t.Null()])
-                            ),
-                            query: t.String(),
-                            variables: t.Optional(
-                                t.Object(
-                                    {},
-                                    {
-                                        additionalProperties: true
-                                    }
-                                )
-                            )
-                        },
-                        {
-                            additionalProperties: true
-                        }
-                    )
+                    body: t.Union([BODY, t.Array(BODY)]),
                 }
             )
         }
