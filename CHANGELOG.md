@@ -1,3 +1,13 @@
+
+# 1.1.0 - 16 Jul 2024
+Change:
+- Add support for Elysia 1.1
+
+
+# 1.1.0-rc.0 - 12 Jul 2024
+Change:
+- Add support for Elysia 1.1
+
 # 1.0.3 - 30 Mar 2024
 Feature:
 - [#8](https://github.com/elysiajs/elysia-apollo/pull/8) add TContext for Apollo type
