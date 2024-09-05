@@ -38,7 +38,7 @@
         "release": "npm run build && npm run test && npm publish --access public"
     },
     "dependencies": {
-        "@apollo/server": "4.10.4",
+        "@apollo/server": "4.11.0",
         "@apollo/server-plugin-landing-page-graphql-playground": "^4.0.1",
         "graphql": "^16.6.0",
         "graphql-tag": "^2.12.6"
