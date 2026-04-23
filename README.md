@@ -1,15 +1,15 @@
-# @elysiajs/apollo
-Plugin for [elysia](https://github.com/elysiajs/elysia) for using GraphQL Apollo.
+# @elysia/apollo
+[Elysia](https://github.com/elysiajs/elysia) to integrate GraphQL Apollo.
 
 ## Installation
 ```bash
-bun add @elysiajs/apollo @apollo/server graphql
+bun add @elysia/apollo @apollo/server graphql
 ```
 
 ## Example
 ```typescript
 import { Elysia } from 'elysia'
-import { apollo, gql } from '@elysiajs/apollo'
+import { apollo, gql } from '@elysia/apollo'
 
 const app = new Elysia()
     .use(

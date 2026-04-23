@@ -1,7 +1,7 @@
 {
-    "name": "@elysiajs/apollo",
-    "description": "Plugin for Elysia for using GraphQL Apollo",
-    "version": "1.4.0",
+    "name": "@elysia/apollo",
+    "description": "Elysia plugin to integrate GraphQL Apollo",
+    "version": "1.4.1",
     "author": {
         "name": "saltyAom",
         "url": "https://github.com/SaltyAom",
@@ -58,9 +58,6 @@
             "optional": true
         },
         "@apollo/server": {
-            "optional": true
-        },
-        "@elysiajs/cors": {
             "optional": true
         },
         "graphql": {
