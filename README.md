@@ -50,7 +50,7 @@ Below are the extended parameters for configuring Apollo Server with Elysia.
 
 Path to expose Apollo Server
 
-### enablePlayground
-@default "process.env.ENV !== 'production'
+### landingPage
+@default "process.env.ENV === 'production' ? 'Production' : 'Local'"
 
-Determine whether should Apollo should provide Apollo Playground
+Determine whether should Apollo render landing page with a `'Local'` variation, `'Production'` variation, or completely `'Disabled'` it. Read more information about each variation on [Apollo's Landing Page Plugins](https://www.apollographql.com/docs/apollo-server/api/plugin/landing-pages)

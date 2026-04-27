@@ -9,7 +9,6 @@ import {
 	ApolloServerPluginLandingPageLocalDefault,
 	ApolloServerPluginLandingPageProductionDefault
 } from '@apollo/server/plugin/landingPage/default'
-import { ApolloServerPluginLandingPageGraphQLPlayground } from '@apollo/server-plugin-landing-page-graphql-playground'
 import { type StartStandaloneServerOptions } from '@apollo/server/standalone'
 
 export interface ServerRegistration<
@@ -17,7 +16,7 @@ export interface ServerRegistration<
 	TContext extends BaseContext = BaseContext
 > extends Omit<StartStandaloneServerOptions<any>, 'context'> {
 	path?: Path
-	enablePlayground: boolean
+	landingPage?: 'Local' | 'Production' | 'Disabled'
 	context?: (context: TContext) => Promise<TContext>
 }
 
@@ -25,8 +24,8 @@ export type ElysiaApolloConfig<
 	Path extends string = '/graphql',
 	TContext extends BaseContext = BaseContext
 > = ApolloServerOptions<TContext> &
-	Omit<ServerRegistration<Path, TContext>, 'enablePlayground'> &
-	Partial<Pick<ServerRegistration, 'enablePlayground'>>
+	Omit<ServerRegistration<Path, TContext>, 'landingPage'> &
+	Partial<Pick<ServerRegistration, 'landingPage'>>
 
 const getQueryString = (url: string) => url.slice(url.indexOf('?', 11) + 1)
 
@@ -35,44 +34,49 @@ export class ElysiaApolloServer<
 > extends ApolloServer<Context> {
 	public async createHandler<Path extends string = '/graphql'>({
 		path = '/graphql' as Path,
-		enablePlayground,
+		landingPage,
 		context: apolloContext = async () => ({}) as any
 	}: ServerRegistration<Path, Context>) {
-		const landing = enablePlayground
-			? ApolloServerPluginLandingPageGraphQLPlayground({
-					endpoint: path
-				})
-			: process.env.ENV === 'production'
-				? ApolloServerPluginLandingPageProductionDefault({
-						footer: false
-					})
-				: ApolloServerPluginLandingPageLocalDefault({
-						footer: false
-					})
-
 		await this.start()
-
-		// @ts-ignore
-		const landingPage = await landing!.serverWillStart!({}).then((r) =>
-			r?.renderLandingPage
-				? r.renderLandingPage().then((r) => r.html)
-				: null
-		)
 
 		const executeHTTPGraphQLRequest =
 			this.executeHTTPGraphQLRequest.bind(this)
 
 		const app = new Elysia()
 
-		if (landingPage)
-			app.get(
-				path,
-				new Response(landingPage as string, {
-					headers: {
-						'Content-Type': 'text/html'
-					}
-				})
+		if (landingPage !== 'Disabled') {
+			const landingPagePlugin = (
+				landingPage === 'Production'
+					? ApolloServerPluginLandingPageProductionDefault
+					: ApolloServerPluginLandingPageLocalDefault
+			)({
+				footer: false
+			})
+
+			const landingPageHtml = await landingPagePlugin?.serverWillStart!(
+				// @ts-ignore
+				{}
+			).then((r) =>
+				r?.renderLandingPage
+					? // @ts-ignore
+						r
+							.renderLandingPage()
+							.then(({ html }) =>
+								typeof html === 'string' ? html : html()
+							)
+					: null
 			)
+
+			if (landingPageHtml)
+				app.get(
+					path,
+					new Response(landingPageHtml, {
+						headers: {
+							'Content-Type': 'text/html'
+						}
+					})
+				)
+		}
 
 		return app.post(
 			path,
@@ -135,14 +139,14 @@ export const apollo = async <
 	TContext extends BaseContext = BaseContext
 >({
 	path,
-	enablePlayground = process.env.ENV !== 'production',
+	landingPage = process.env.ENV === 'production' ? 'Production' : 'Local',
 	context,
 	...config
 }: ElysiaApolloConfig<Path, TContext>) =>
 	new ElysiaApolloServer<TContext>(config).createHandler<Path>({
 		context,
 		path,
-		enablePlayground
+		landingPage
 	})
 
 export { gql } from 'graphql-tag'
