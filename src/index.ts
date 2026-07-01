@@ -1,4 +1,5 @@
-import { Elysia, t } from 'elysia'
+import { Elysia } from 'elysia'
+import { looseObject, optional, nullable, string } from 'valibot'
 
 import {
 	ApolloServer,
@@ -74,27 +75,16 @@ export class ElysiaApolloServer<
 				})
 			)
 
-		return app.post(path, {
-				body: t.Object(
-					{
-						operationName: t.Optional(
-							t.Union([t.String(), t.Null()])
-						),
-						query: t.String(),
-						variables: t.Optional(
-							t.Object(
-								{},
-								{
-									additionalProperties: true
-								}
-							)
-						)
-					},
-					{
-						additionalProperties: true
-					}
-				)
-			}, async function handleGraph(context) {
+		return app.post(
+			path,
+			{
+				body: looseObject({
+					operationName: optional(nullable(string())),
+					query: string(),
+					variables: optional(looseObject({}))
+				})
+			},
+			async function handleGraph(context) {
 				const {
 					body,
 					request,
@@ -122,7 +112,8 @@ export class ElysiaApolloServer<
 					// @ts-ignore
 					headers: res.headers
 				})
-			})
+			}
+		)
 	}
 }
 
